@@ -1,0 +1,29 @@
+.container-fluid {
+
+}
+
+body {
+  background-color: black;
+}
+
+.title {
+  color: white;
+  font-size: 24px;
+  text-align: left;
+  padding-top: 20px;
+}
+
+.offense,
+.defense,
+.tank,
+.support {
+  justify-content: space-between;
+}
+
+.battle {
+  text-align: right;
+}
+
+span {
+  color: white;
+}
