@@ -24,7 +24,9 @@ var Engine = (function(global) {
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
         lastTime,
-        spaceCount;
+        spaceCount = false,
+        hero = {},
+        enemy = {};
 
     WebFontConfig = {
       custom: { families: ['Press Start 2P'],
@@ -47,45 +49,47 @@ var Engine = (function(global) {
     canvas.width = 800;
     canvas.height = 640;
     doc.body.appendChild(canvas);
-    ctx.font = "25px 'Press Start 2P'";
 
-    // Start button
-    var button = document.getElementById("start");
-    var hero,
-        enemy;
-    // Waiting for button click to read hero/enemy data
-    button.addEventListener('click', function(evt) {
-      var heroName = document.getElementById('hero').value,
-          enemyName = document.getElementById('enemy').value;
+    function loading() {
+      // var logo = new Image();
+      // logo.src = "images/overwatch.png";
+      // ctx.drawImage(logo,0,0);
 
-      hero = new window[heroName];
-      enemy = new window[enemyName];
-      console.log(enemy);
-      hero.type = 'hero';
-      hero.sprite = hero.heroImage;
-      hero.lives = 1;
-      enemy.type = 'enemy';
-      enemy.sprite = enemy.enemyImage;
-      enemy.lives = 1;
+      ctx.fillStyle = 'white';
+      ctx.textAlign = "center";
+      ctx.font = "25px 'Press Start 2P'";
+      ctx.fillText('Select your hero:',252,60);
+      ctx.fillText("Select your enemy:",252,160);
+      ctx.fillText("Press Start to begin the game",252,260);
 
-      /* Go ahead and load all of the images we know we're going to need to
-      * draw our game level. Then set init as the callback method, so that when
-      * all of these images are properly loaded our game will start.
-      */
-      Resources.load([
-         'images/background.png',
-         'images/background-selection-menu.png',
-         'images/empty-lootbox.png',
-         'images/full-lootbox.png',
-         'images/selection-arrow.png',
-         hero.sprite,
-         enemy.sprite
-      ]);
+      // Start button
+      var button = document.getElementById("start");
 
-      document.getElementById('container').style.display = 'none';
+      // Waiting for button click to read hero/enemy data
+      button.addEventListener('click', function(evt) {
+        var heroName = document.getElementById('hero').value,
+            enemyName = document.getElementById('enemy').value;
 
-      Resources.onReady(init);
-    });
+        hero = new window[heroName];
+        enemy = new window[enemyName];
+        hero.type = 'hero';
+        hero.sprite = hero.heroImage;
+        enemy.type = 'enemy';
+        enemy.sprite = enemy.enemyImage;
+
+        Resources.load([
+          hero.sprite,
+          enemy.sprite
+        ]);
+
+        document.getElementById('container').style.display = 'none';
+        /* Go ahead and load all of the images we know we're going to need to
+        * draw our game level. Then set init as the callback method, so that when
+        * all of these images are properly loaded our game will start.
+        */
+        Resources.onReady(init);
+      });
+    }
 
     /* This function serves as the kickoff point for the game loop itself
      * and handles properly calling the update and render methods.
@@ -114,74 +118,74 @@ var Engine = (function(global) {
         /* Use the browser's requestAnimationFrame function to call this
          * function again as soon as the browser is able to draw another frame.
          */
-         document.addEventListener('keydown', function(e) {
-           var allowedKeys = {
-               37: 'left',
-               38: 'up',
-               39: 'right',
-               40: 'down',
-               32: 'space'
-           };
 
-           handleInput(allowedKeys[e.keyCode]);
-         });
+
 
         win.requestAnimationFrame(main);
     }
 
     function handleInput(key) {
+      var oldX = cursor.x;
+      var oldY = cursor.y;
       switch (key) {
         case 'left':
-          if (this.x - 101 >= 3) {
-            this.x -= 101;
+          if (cursor.x - 185 >= 391) {
+            cursor.x -= 185;
           }
           break;
         case 'up':
-          if (this.y == 63) {
-            this.y = 415;
-            this.wins++;
-          }
-          else {
-            this.y -= 88;
+          if (cursor.y -70 >= 487) {
+            cursor.y -= 70;
           }
           break;
         case 'right':
-          if (this.x + 101 <= 407) {
-            this.x += 101;
+          if (cursor.x + 185 <= 576) {
+            cursor.x += 185;
           }
           break;
         case 'down':
-          if (this.y + 88 <= 415) {
-            this.y += 88;
+          if (cursor.y + 70 <= 557) {
+            cursor.y += 70;
           }
           break;
         case 'space':
-          spaceCount++;
-          if (spaceCount > 1) {
-
-          }
-          else {
+          if (spaceCount == false) {
             renderSelectionScreen();
             renderChars();
             renderHealth();
+            ctx.font = '24px "Press Start 2P"';
             renderNames();
-            renderCursor(600,500);
+            renderCursor();
+            return false;
           }
+          spaceCount = true;
           break;
       }
+      clearCursor(oldX,oldY);
+      renderCursor();
     }
+
     /* This function does some initial setup that should only occur once,
      * particularly setting the lastTime variable that is required for the
      * game loop.
      */
     function init() {
-        reset();
-        lastTime = Date.now();
-        renderBackground();
-        renderLives(hero.lives,enemy.lives);
-        renderChars();
-        renderNames();
-        main();
+      document.addEventListener('keydown', function(e) {
+        var allowedKeys = {
+            37: 'left',
+            38: 'up',
+            39: 'right',
+            40: 'down',
+            32: 'space'
+        };
+        handleInput(allowedKeys[e.keyCode]);
+      });
+      lastTime = Date.now();
+      renderBackground();
+      renderLives(hero.lives,enemy.lives);
+      renderChars();
+      renderNames();
+      main();
     }
 
     /* This function is called by main (our game loop) and itself calls all
@@ -216,8 +220,8 @@ var Engine = (function(global) {
      * they are just drawing the entire screen over and over.
      */
     function renderChars() {
-      hero.render(hero.type);
-      enemy.render(enemy.type);
+      hero.renderHero(hero.name);
+      enemy.renderEnemy(enemy.name);
     }
 
     function renderNames() {
@@ -225,26 +229,67 @@ var Engine = (function(global) {
       ctx.fillText(enemy.name, 70, 45);
     }
 
-    function renderCursor(x,y) {
-      var cursorImage = new Image();
-      cursorImage.src = 'images/selection-arrow.png';
+    function renderCursor() {
+      ctx.drawImage(Resources.get('images/selection-arrow.png'), cursor.x, cursor.y, 20, 30);
+    }
 
-      var cursor = function () {
-        this.x = x;
-        this.y = y;
-        cursor.sprite = cursorImage;
-      };
-      ctx.drawImage(cursorImage, cursor.x, cursor.y);
+    function clearCursor(x,y) {
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(x, y, 20, 30);
     }
 
     function renderHealth() {
+      ctx.font = '16px "Press Start 2P"';
       hero.totalHealth = hero.hp.health + hero.hp.armor + hero.hp.shields;
       enemy.totalHealth = enemy.hp.health + enemy.hp.armor + enemy.hp.shields;
-      ctx.fillText(hero.totalHealth, 450, 377);
-      ctx.fillText(enemy.totalHealth, 150, 95);
+
+      var heroHealthBar = 308 * (hero.hp.health / hero.totalHealth),
+          heroArmorBar = 308 * (hero.hp.armor / hero.totalHealth),
+          heroShieldsBar = 308 * (hero.hp.shields / hero.totalHealth),
+          enemyHealthBar = 308 * (enemy.hp.health / enemy.totalHealth),
+          enemyArmorBar = 308 * (enemy.hp.armor / enemy.totalHealth),
+          enemyShieldsBar = 308 * (enemy.hp.shields / enemy.totalHealth);
+
+      hero.remainingHealth = hero.totalHealth;
+      enemy.remainingHealth = enemy.totalHealth;
+      ctx.fillText("HP:" + hero.remainingHealth + "/" + hero.totalHealth, 415, 400);
+      ctx.fillText("HP:" + enemy.remainingHealth + "/" + enemy.totalHealth, 80, 115);
+      ctx.strokeStyle = 'black';
+      ctx.strokeRect(415,360,310,15);
+      ctx.strokeRect(80,75,310,15);
+
+      if (heroHealthBar > 0) {
+        ctx.fillStyle = 'lightgrey';
+        ctx.fillRect(416, 361, heroHealthBar, 13);
+      }
+      if (heroArmorBar > 0) {
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(416 + heroHealthBar, 361, heroArmorBar, 13);
+      }
+      if (heroShieldsBar > 0) {
+        ctx.fillStyle = 'lightblue';
+        ctx.fillRect(416 + heroHealthBar + heroArmorBar, 361, heroShieldsBar, 13);
+      }
+      if (enemyHealthBar > 0) {
+        ctx.fillStyle = 'lightgrey';
+        ctx.fillRect(81, 76, enemyHealthBar, 13);
+      }
+      if (enemyArmorBar > 0) {
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(81 + enemyHealthBar, 76, enemyArmorBar, 13);
+      }
+      if (enemyShieldsBar > 0) {
+        ctx.fillStyle = 'lightblue';
+        ctx.fillRect(81 + enemyHealthBar + enemyArmorBar, 76, enemyShieldsBar, 13);
+      }
+
+      ctx.fillStyle = 'black';
     }
 
     function renderBackground() {
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'left';
+      ctx.font = "24px 'Press Start 2P'";
       var background = new Image();
       background.src = "images/background.png";
       ctx.drawImage(background,0,0);
@@ -286,13 +331,15 @@ var Engine = (function(global) {
       }
     }
 
-    /* This function does nothing but it could have been a good place to
-     * handle game reset states - maybe a new game menu or a game over screen
-     * those sorts of things. It's only called once by the init() method.
-     */
-    function reset() {
-        //noop
-    }
+    Resources.load([
+       'images/background.png',
+       'images/ow-logo.png',
+       'images/background-selection-menu.png',
+       'images/empty-lootbox.png',
+       'images/full-lootbox.png',
+       'images/selection-arrow.png'
+    ]);
+    Resources.onReady(loading);
 
     /* Assign the canvas' context object to the global variable (the window
      * object when run in a browser) so that developers can use it more easily
